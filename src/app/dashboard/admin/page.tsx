@@ -25,6 +25,15 @@ import { getBrowserSupabaseClient } from "@/lib/supabase/browser";
 import { getCurrentMonthKey, getDataMonths } from "@/lib/data/selectors";
 import { formatMonthLabel, formatCurrency, monthKey } from "@/lib/utils";
 
+function Input({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+  return (
+    <div>
+      <label className="mb-1 block text-[11px] font-medium text-slate-600">{label}</label>
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs outline-none focus:border-slate-400" />
+    </div>
+  );
+}
+
 interface UserAccount {
   id: string;
   name: string;
@@ -880,8 +889,10 @@ export default function AdminPage() {
     const saveClient = () => {
       if (!clientForm.name.trim()) { toast.error("Client name is required"); return; }
       if (clientModal?.mode === "add") {
-        addClient(clientForm);
-        toast.success("Client added");
+        const newId = createPrefixedId("client");
+        addClient(clientForm, newId);
+        setExpandedClient(newId);
+        toast.success("Client added. Add SPOCs below.");
       } else if (clientModal?.id) {
         updateClient(clientModal.id, clientForm);
         toast.success("Client updated");
@@ -921,15 +932,6 @@ export default function AdminPage() {
         toast.success("SPOC deleted");
       }
     };
-
-    function Input({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
-      return (
-        <div>
-          <label className="mb-1 block text-[11px] font-medium text-slate-600">{label}</label>
-          <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs outline-none focus:border-slate-400" />
-        </div>
-      );
-    }
 
     return (
       <>

@@ -155,7 +155,7 @@ function PositionFormModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={lc}>Client *</label>
-                  <select className={`mt-1.5 ${ic}`} value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })}>
+                  <select className={`mt-1.5 ${ic}`} value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value, spocId: "" })}>
                     <option value="">Select client</option>
                     {state.clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
@@ -187,7 +187,7 @@ function PositionFormModal({
                   <label className={lc}>Client POC *</label>
                   <select className={`mt-1.5 ${ic}`} value={form.spocId} onChange={(e) => setForm({ ...form, spocId: e.target.value })}>
                     <option value="">Select POC</option>
-                    {state.spocs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {state.spocs.filter((s) => s.clientId === form.clientId).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -446,9 +446,9 @@ function DetailModal({
               <div className="rounded-xl border border-slate-100/80 bg-white p-4">
                 <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400"><span className="h-3 w-0.5 rounded-full bg-blue-400" /> Points of Contact</div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><div className={lc}>Client POC</div><select className={`mt-1 ${ic}`} value={spocId} onChange={(e) => setSpocId(e.target.value)}>{state.spocs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+                  <div><div className={lc}>Client POC</div><select className={`mt-1 ${ic}`} value={spocId} onChange={(e) => setSpocId(e.target.value)}>{state.spocs.filter((s) => s.clientId === clientId).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
                   <div><div className={lc}>H&B SPOC</div><select className={`mt-1 ${ic}`} value={recruiterId} onChange={(e) => setRecruiterId(e.target.value)}>{state.recruiters.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
-                  <div><div className={lc}>Client</div><select className={`mt-1 ${ic}`} value={clientId} onChange={(e) => setClientId(e.target.value)}>{state.clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+                  <div><div className={lc}>Client</div><select className={`mt-1 ${ic}`} value={clientId} onChange={(e) => { setClientId(e.target.value); setSpocId(""); }}>{state.clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
                 </div>
               </div>
               <div className="rounded-xl border border-slate-100/80 bg-white p-4">
