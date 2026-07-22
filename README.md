@@ -67,3 +67,6 @@ npm run build
 3. Disable public signups in Supabase Auth dashboard
 4. Create the first admin manually via Supabase before inviting users
 5. Verify all RLS policies are active
+
+
+Connected repo note: Vercel will deploy from the linked GitHub branch.
