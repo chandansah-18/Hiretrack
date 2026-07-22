@@ -2,8 +2,13 @@ import pg from 'pg';
 
 const { Pool } = pg;
 
-const projectRef = 'rzhhjeiyjvmtjyjzahbs';
-const key = 'process.env.SUPABASE_SERVICE_ROLE_KEY';
+const projectRef = process.env.SUPABASE_PROJECT_REF ?? 'rzhhjeiyjvmtjyjzahbs';
+const key = process.env.SUPABASE_DB_PASSWORD;
+
+if (!key) {
+  console.error('Missing SUPABASE_DB_PASSWORD environment variable');
+  process.exit(1);
+}
 
 const MIGRATION_SQL = `
 alter table public.candidates add column if not exists holding_offer_ctc numeric(12,2) not null default 0;
