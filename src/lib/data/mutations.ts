@@ -665,18 +665,9 @@ export function applyDashboardAction(state: DashboardState, action: DashboardAct
       };
     }
     case "add-position": {
-      const posPattern = /^pos-(\d+)$/i;
-      let nextSeq = 1;
-      for (const pos of state.positions) {
-        const match = pos.id.match(posPattern);
-        if (match) {
-          const num = parseInt(match[1], 10);
-          if (num >= nextSeq) nextSeq = num + 1;
-        }
-      }
       const newPosition: Position = {
         ...action.position,
-        id: action.positionId ?? `pos-${nextSeq}`,
+        id: action.positionId ?? createPrefixedId("pos"),
       };
       return {
         ...state,
