@@ -76,6 +76,7 @@ type PositionRow = {
   ctc: number;
   location: string[];
   remarks: string;
+  archived_at?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -106,6 +107,7 @@ type CandidateRow = {
   holding_offer_ctc: number;
   holding_offer_company: string;
   holding_offer_doj: string;
+  archived_at?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -122,6 +124,7 @@ type InterviewRow = {
   status: string;
   feedback_due: string;
   remarks: string;
+  archived_at?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -138,6 +141,7 @@ type OfferRow = {
   remarks: string;
   bill_value: number;
   selection_status: string;
+  archived_at?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -151,6 +155,7 @@ type JoiningRow = {
   status: string;
   joining_date: string;
   remarks: string;
+  archived_at?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -403,6 +408,7 @@ function fromPosition(item: Position): PositionRow {
     ctc: item.ctc,
     location: item.location,
     remarks: item.remarks,
+    archived_at: null,
   };
 }
 
@@ -433,6 +439,7 @@ function fromCandidate(item: Candidate): CandidateRow {
     holding_offer_ctc: item.holdingOfferCtc,
     holding_offer_company: item.holdingOfferCompany,
     holding_offer_doj: item.holdingOfferDoj,
+    archived_at: null,
   };
 }
 
@@ -450,6 +457,7 @@ function fromInterview(item: Interview): InterviewRow {
     status: item.status,
     feedback_due: safeDate(item.feedbackDue) ?? today,
     remarks: item.remarks,
+    archived_at: null,
   };
 }
 
@@ -466,6 +474,7 @@ function fromOffer(item: Offer): OfferRow {
     remarks: item.remarks,
     bill_value: item.billValue,
     selection_status: item.selectionStatus,
+    archived_at: null,
   };
 }
 
@@ -479,6 +488,7 @@ function fromJoining(item: Joining): JoiningRow {
     status: item.status,
     joining_date: safeDate(item.joiningDate) ?? new Date().toISOString().slice(0, 10),
     remarks: item.remarks,
+    archived_at: null,
   };
 }
 
