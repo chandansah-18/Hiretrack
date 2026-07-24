@@ -854,7 +854,10 @@ export async function saveDashboardStateToSupabase(
         case "joinings": ops.push(syncRows(client, "joinings", filterRows(state.joinings.map(fromJoining), "joinings"), previousState ? filterRows(previousState.joinings.map(fromJoining), "joinings") : undefined)); break;
         case "cv_shared_entries": ops.push(syncRows(client, "cv_shared_entries", filterRows(state.cvSharedEntries.map(fromCvSharedEntry), "cv_shared_entries"), previousState ? filterRows(previousState.cvSharedEntries.map(fromCvSharedEntry), "cv_shared_entries") : undefined)); break;
         case "leaves": ops.push(syncRows(client, "leaves", filterRows((state.leaves ?? []).map(fromLeave), "leaves"), previousState ? filterRows((previousState.leaves ?? []).map(fromLeave), "leaves") : undefined)); break;
-        case "activity_log": ops.push(syncRows(client, "activity_log", state.activityLog.map(fromActivityLog), previousState?.activityLog.map(fromActivityLog))); break;
+        case "activity_log": ops.push(
+          syncRows(client, "activity_log", state.activityLog.map(fromActivityLog), previousState?.activityLog.map(fromActivityLog))
+            .catch((e) => { console.warn("activity_log sync failed (non-critical):", e); })
+        ); break;
       }
     }
     if (ops.length > 0) {
