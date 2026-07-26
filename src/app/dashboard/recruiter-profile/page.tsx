@@ -80,8 +80,8 @@ function RecruiterProfileContent() {
   const allProfiles = useMemo(() => getRecruiterProfileDetail(state, selectedMonth), [state, selectedMonth]);
   const profile = allProfiles.find((p) => p.id === selectedRecruiterId);
   const trends = useMemo(
-    () => (selectedRecruiterId ? getRecruiterExtendedTrends(state, selectedRecruiterId) : null),
-    [state, selectedRecruiterId]
+    () => (selectedRecruiterId ? getRecruiterExtendedTrends(state, selectedRecruiterId, period === "month" ? selectedMonth : undefined) : null),
+    [state, selectedRecruiterId, period, selectedMonth]
   );
 
   const recruiter = state.recruiters.find((r) => r.id === selectedRecruiterId);

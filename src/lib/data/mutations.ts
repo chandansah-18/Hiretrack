@@ -709,24 +709,18 @@ export function applyDashboardAction(state: DashboardState, action: DashboardAct
       if (!position) {
         return state;
       }
-      const removedCandidateIds = state.candidates.filter((item) => item.positionId === action.positionId).map((item) => item.id);
-      const removedInterviewIds = state.interviews.filter((item) => item.positionId === action.positionId).map((item) => item.id);
-      const removedOfferIds = state.offers.filter((item) => item.positionId === action.positionId).map((item) => item.id);
-      const removedJoiningIds = state.joinings.filter((item) => item.positionId === action.positionId).map((item) => item.id);
       return {
         ...state,
-        positions: state.positions.filter((item) => item.id !== action.positionId),
-        candidates: state.candidates.filter((item) => item.positionId !== action.positionId),
-        interviews: state.interviews.filter((item) => item.positionId !== action.positionId),
-        offers: state.offers.filter((item) => item.positionId !== action.positionId),
-        joinings: state.joinings.filter((item) => item.positionId !== action.positionId),
+        positions: state.positions.map((item) =>
+          item.id === action.positionId ? { ...item, status: "Closed" as const } : item
+        ),
         activityLog: appendActivity(state, {
           actorName: action.actorName,
           action: "Deleted position",
           entityType: "position",
           entityId: position.id,
           entityName: position.name,
-          description: `${position.name} deleted. Removed ${removedCandidateIds.length} candidates, ${removedInterviewIds.length} interviews, ${removedOfferIds.length} offers, and ${removedJoiningIds.length} joinings tied to the role.`,
+          description: `${position.name} closed. Candidates and interviews retain this position reference for tracking.`,
         }),
       };
     }
@@ -1160,7 +1154,7 @@ export function getAffectedTables(action: DashboardAction): Set<DashboardTableNa
     case "update-position-all":
       return new Set(["positions", "activity_log"]);
     case "delete-position":
-      return new Set(["positions", "interviews", "candidates", "offers", "joinings", "activity_log"]);
+      return new Set(["positions", "activity_log"]);
     case "add-interview":
       return new Set(["interviews", "candidates", "activity_log"]);
     case "add-recruiter":

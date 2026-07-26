@@ -14,7 +14,7 @@ import {
   SectionEmpty,
 } from "@/components/dashboard/section-layout";
 import { useApp } from "@/components/providers/app-provider";
-import { createLookups, filterOffers } from "@/lib/data/selectors";
+import { createLookups, filterOffers, getDataMonths } from "@/lib/data/selectors";
 import type { SelectionOfferStatus } from "@/lib/data/types";
 import { formatCurrency, formatLongDate, formatMonthLabel, monthKey } from "@/lib/utils";
 
@@ -24,17 +24,6 @@ const STATUS_OPTIONS: SelectionOfferStatus[] = [
   "Joined",
   "Joining Pending",
 ];
-
-const MONTH_OPTIONS = (() => {
-  const months: { value: string; label: string }[] = [];
-  const now = new Date();
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = monthKey(d);
-    months.push({ value: key, label: formatMonthLabel(key) });
-  }
-  return months;
-})();
 
 function DetailModal({
   offer,
@@ -371,6 +360,7 @@ export default function SelectionPage() {
   const [quickActionTarget, setQuickActionTarget] = useState<{ offerId: string; action: SelectionOfferStatus } | null>(null);
 
   const lookups = useMemo(() => createLookups(state), [state]);
+  const monthOptions = useMemo(() => getDataMonths(state).map((m) => ({ label: formatMonthLabel(m), value: m })), [state]);
 
   const rows = useMemo(() => {
     if (!state) return [];
@@ -443,7 +433,7 @@ export default function SelectionPage() {
           </FilterSelect>
           <FilterSelect accent="teal" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)}>
             <option value="">All Months</option>
-            {MONTH_OPTIONS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+            {monthOptions.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
           </FilterSelect>
         </>
       }

@@ -681,8 +681,12 @@ export function getWeekSummary(state: DashboardState): WeekSummary {
   const joined = state.joinings.filter(
     (j) => j.status === "Joined" && isThisWeek(j.joiningDate)
   ).length;
+  const currentMonth = monthKey(new Date());
+  const cvShared = state.cvSharedEntries
+    .filter((e) => e.month === currentMonth)
+    .reduce((sum, e) => sum + e.count, 0);
   return {
-    cvShared: 0,
+    cvShared: Math.round(cvShared / 4.33),
     interviewsDone,
     finalSelects,
     joined,
@@ -1164,7 +1168,7 @@ export interface RecruiterExtendedTrends {
   lastFinalSelectDate: string | null;
 }
 
-export function getRecruiterExtendedTrends(state: DashboardState, recruiterId: string): RecruiterExtendedTrends {
+export function getRecruiterExtendedTrends(state: DashboardState, recruiterId: string, monthFilter?: string): RecruiterExtendedTrends {
   const now = new Date();
   const trends: RecruiterExtendedTrends["trends"] = [];
   for (let i = 11; i >= 0; i--) {
@@ -1181,14 +1185,23 @@ export function getRecruiterExtendedTrends(state: DashboardState, recruiterId: s
     trends.push({ month: key, label, cvCount, interviewCount, joinedCount });
   }
 
-  const interviews = state.interviews.filter((i) => i.recruiterId === recruiterId);
+  const interviews = monthFilter
+    ? state.interviews.filter((i) => i.recruiterId === recruiterId && monthKey(i.interviewDate) === monthFilter)
+    : state.interviews.filter((i) => i.recruiterId === recruiterId);
+  const candidates = monthFilter
+    ? state.candidates.filter((c) => c.recruiterId === recruiterId && monthKey(c.submittedAt) === monthFilter)
+    : state.candidates.filter((c) => c.recruiterId === recruiterId);
+  const joinings = monthFilter
+    ? state.joinings.filter((j) => j.recruiterId === recruiterId && monthKey(j.joiningDate) === monthFilter)
+    : state.joinings.filter((j) => j.recruiterId === recruiterId);
+
   const l1Count = interviews.filter((i) => i.round === "L1" && activeInterviewStatuses.has(i.status)).length;
   const l2Count = interviews.filter((i) => i.round === "L2" && activeInterviewStatuses.has(i.status)).length;
   const ciCount = interviews.filter((i) => i.round === "CI" && activeInterviewStatuses.has(i.status)).length;
-  const joinedCount = state.joinings.filter((j) => j.recruiterId === recruiterId && j.status === "Joined").length;
+  const joinedCount = joinings.filter((j) => j.status === "Joined").length;
 
   const stages = [
-    { stage: "CVs", count: state.candidates.filter((c) => c.recruiterId === recruiterId).length },
+    { stage: "CVs", count: candidates.length },
     { stage: "L1 Interviews", count: l1Count },
     { stage: "L2 Interviews", count: l2Count },
     { stage: "CI Rounds", count: ciCount },
@@ -1199,19 +1212,19 @@ export function getRecruiterExtendedTrends(state: DashboardState, recruiterId: s
     conversionPct: i === 0 ? 100 : stages[i - 1].count === 0 ? 0 : Math.round((s.count / stages[i - 1].count) * 100),
   }));
 
-  const screenRejects = state.candidates.filter((c) => c.recruiterId === recruiterId && c.stage === "Rejected").length;
+  const screenRejects = candidates.filter((c) => c.stage === "Rejected").length;
   const feedbackPending = interviews.filter((i) => i.status === "L1 Done" || i.status === "L2 Done" || i.status === "CI Round Done").length;
   const interviewsDone = interviews.filter((i) => i.status.includes("Done")).length;
 
-  const joinings = state.joinings
+  const lastJoinings = state.joinings
     .filter((j) => j.recruiterId === recruiterId && j.status === "Joined")
     .sort((a, b) => b.joiningDate.localeCompare(a.joiningDate));
-  const lastJoiningDate = joinings.length > 0 ? joinings[0].joiningDate : null;
+  const lastJoiningDate = lastJoinings.length > 0 ? lastJoinings[0].joiningDate : null;
 
-  const candidates = state.candidates
+  const fsCandidates = state.candidates
     .filter((c) => c.recruiterId === recruiterId && c.finalSelectDate && c.finalSelectDate !== "")
     .sort((a, b) => b.finalSelectDate.localeCompare(a.finalSelectDate));
-  const lastFinalSelectDate = candidates.length > 0 ? candidates[0].finalSelectDate : null;
+  const lastFinalSelectDate = fsCandidates.length > 0 ? fsCandidates[0].finalSelectDate : null;
 
   return { trends, funnel, screenRejects, feedbackPending, interviewsDone, lastJoiningDate, lastFinalSelectDate };
 }

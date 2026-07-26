@@ -426,6 +426,7 @@ function DetailModal({
             <DetailSectionCard>
               <DetailSectionTitle><span className="h-3 w-0.5 rounded-full bg-amber-400" /> Points of Contact</DetailSectionTitle>
               <div className="space-y-2.5 text-sm">
+                <DetailSectionRow label="Candidate Contact" value={candidate?.contactNo ?? "—"} />
                 <DetailSectionRow label="Client POC" value="—" />
                 <DetailSectionRow label="Recruiter" value={recruiter?.name ?? "—"} />
               </div>

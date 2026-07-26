@@ -13,7 +13,7 @@ import {
   getMomChange, getWeekSummary, getLastWeekSummary, getAgingPipeline,
   getUpcomingInterviews, getInterviewRoundBreakdown, getDataMonths,
 } from "@/lib/data/selectors";
-import { formatShortDate, formatMonthLabel } from "@/lib/utils";
+import { formatShortDate, formatMonthLabel, monthKey } from "@/lib/utils";
 import type { DashboardState } from "@/lib/data/types";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { Panel } from "@/components/ui/panel";
@@ -248,25 +248,27 @@ function FunnelSection({ state, selectedMonth, isAll }: { state: DashboardState;
   );
 }
 
-function AttentionSection({ state }: { state: DashboardState }) {
+function AttentionSection({ state, selectedMonth, isAll }: { state: DashboardState; selectedMonth: string | "all"; isAll: boolean }) {
   const agingItems = useMemo(() => getAgingPipeline(state), [state]);
   const upcoming = useMemo(() => getUpcomingInterviews(state), [state]);
   const roundBreakdown = useMemo(() => getInterviewRoundBreakdown(state), [state]);
 
   const pipelineStages = useMemo(() => {
-    const totalCvs = state.candidates.length;
-    const inProgress = state.candidates.filter(
+    const candidates = isAll ? state.candidates : state.candidates.filter((c) => monthKey(c.submittedAt) === selectedMonth);
+    const joinings = isAll ? state.joinings : state.joinings.filter((j) => monthKey(j.joiningDate) === selectedMonth);
+    const totalCvs = candidates.length;
+    const inProgress = candidates.filter(
       (c) => c.stage !== "CV Submitted" && c.stage !== "Final Selection" && c.stage !== "Offer" && c.stage !== "Joined" && c.stage !== "Screen Reject" && c.stage !== "Drop" && c.stage !== "Duplicate" && c.stage !== "Rejected"
     ).length;
-    const finalSelect = state.candidates.filter((c) => c.stage === "Final Selection").length;
-    const joined = state.joinings.filter((j) => j.status === "Joined").length;
+    const finalSelect = candidates.filter((c) => c.stage === "Final Selection").length;
+    const joined = joinings.filter((j) => j.status === "Joined").length;
     return [
       { label: "CVs Shared", color: "bg-blue-500", light: "bg-blue-50", text: "text-blue-700", value: totalCvs },
       { label: "In Progress", color: "bg-amber-500", light: "bg-amber-50", text: "text-amber-700", value: inProgress },
       { label: "Final Select", color: "bg-emerald-500", light: "bg-emerald-50", text: "text-emerald-700", value: finalSelect },
       { label: "Joined", color: "bg-violet-500", light: "bg-violet-50", text: "text-violet-700", value: joined },
     ];
-  }, [state]);
+  }, [state, selectedMonth, isAll]);
 
   const urgencyColors: Record<string, string> = {
     urgent: "bg-red-500", soon: "bg-amber-400", later: "bg-blue-400",
@@ -505,7 +507,7 @@ export default function DashboardHomePage() {
 
       {/* ── Row 3: Needs Attention + Pipeline Overview ── */}
       <ErrorBoundary name="Attention & Pipeline">
-        <AttentionSection state={state} />
+        <AttentionSection state={state} selectedMonth={selectedMonth} isAll={isAll} />
       </ErrorBoundary>
 
       {/* ── Row 4: Today's Interviews + Upcoming ── */}

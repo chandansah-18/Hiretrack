@@ -395,12 +395,14 @@ export default function FinalSelectionPage() {
   const [clientFilter, setClientFilter] = useState("");
   const [recruiterFilter, setRecruiterFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState(() => monthKey(new Date()));
+  const [selectedMonth, setSelectedMonth] = useState<string | "all">(() => monthKey(new Date()));
   const [detailTarget, setDetailTarget] = useState<string | null>(null);
   const [confirmOfferTarget, setConfirmOfferTarget] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [now] = useState(Date.now);
   const { updateFinalSelect } = useApp();
+
+  const isAll = selectedMonth === "all";
 
   const handleQuickStatusChange = (candidateId: string, status: FinalSelectStatus) => {
     if (status === "Offer Released") {
@@ -429,7 +431,9 @@ export default function FinalSelectionPage() {
   const rows = useMemo(() => {
     if (!state) return [];
     let candidates = getFinalSelectionCandidates(state, activeFilters);
-    candidates = candidates.filter((c) => monthKey(c.finalSelectDate || c.submittedAt) === selectedMonth);
+    if (!isAll) {
+      candidates = candidates.filter((c) => monthKey(c.finalSelectDate || c.submittedAt) === selectedMonth);
+    }
     if (clientFilter) {
       candidates = candidates.filter((c) => c.clientId === clientFilter);
     }
@@ -453,6 +457,7 @@ export default function FinalSelectionPage() {
       filters={
         <>
           <FilterSelect accent="emerald" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
+            <option value="all">All Months</option>
             {monthOptions.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
           </FilterSelect>
           <FilterSelect accent="emerald" value={clientFilter} onChange={(e) => setClientFilter(e.target.value)}>
@@ -470,7 +475,7 @@ export default function FinalSelectionPage() {
         </>
       }
       count={rows.length}
-      countLabel={`candidates in ${formatMonthLabel(selectedMonth)}`}
+      countLabel={isAll ? "candidates (all months)" : `candidates in ${formatMonthLabel(selectedMonth)}`}
     >
       <SectionTable
         headers={[
@@ -493,11 +498,11 @@ export default function FinalSelectionPage() {
 
           return (
             <SectionRow key={candidate.id} accent="emerald">
-              <td className="border-b border-slate-100 px-4 py-3.5 text-slate-600">
+              <td className="border-b border-slate-100 whitespace-nowrap px-4 py-3.5 text-slate-600">
                 {candidate.finalSelectDate ? formatLongDate(candidate.finalSelectDate) : "\u2014"}
               </td>
-              <td className="border-b border-slate-100 px-4 py-3.5 font-semibold text-slate-800">{client?.name}</td>
-              <td className="border-b border-slate-100 px-4 py-3.5 text-slate-600">{position?.name}</td>
+              <td className="border-b border-slate-100 px-4 py-3.5 font-semibold text-slate-800 min-w-0 max-w-[180px] truncate">{client?.name}</td>
+              <td className="border-b border-slate-100 px-4 py-3.5 text-slate-600 min-w-0 max-w-[180px] truncate">{position?.name}</td>
               <td className="border-b border-slate-100 px-4 py-3.5">
                 <button className="font-semibold text-emerald-600 hover:text-emerald-800 hover:underline text-left transition-colors" onClick={() => setDetailTarget(candidate.id)}>
                   {candidate.name}
