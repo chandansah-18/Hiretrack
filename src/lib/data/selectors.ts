@@ -385,17 +385,18 @@ export interface InterviewRoundBreakdown {
   total: number;
 }
 
-export function getInterviewRoundBreakdown(state: DashboardState): InterviewRoundBreakdown[] {
+export function getInterviewRoundBreakdown(state: DashboardState, selectedMonth?: string | "all"): InterviewRoundBreakdown[] {
   const roundMap = new Map<string, { scheduled: number; done: number }>();
-  state.interviews
-    .filter((i) => i.status !== "Cancelled")
-    .forEach((i) => {
-      const roundKey = i.round.replace(/ .*$/, "");
-      const entry = roundMap.get(roundKey) ?? { scheduled: 0, done: 0 };
-      if (i.status.endsWith("Scheduled")) entry.scheduled++;
-      if (doneInterviewStatuses.has(i.status)) entry.done++;
-      roundMap.set(roundKey, entry);
-    });
+  const filtered = selectedMonth && selectedMonth !== "all"
+    ? state.interviews.filter((i) => monthKey(i.interviewDate) === selectedMonth && i.status !== "Cancelled")
+    : state.interviews.filter((i) => i.status !== "Cancelled");
+  filtered.forEach((i) => {
+    const roundKey = i.round.replace(/ .*$/, "");
+    const entry = roundMap.get(roundKey) ?? { scheduled: 0, done: 0 };
+    if (i.status.endsWith("Scheduled")) entry.scheduled++;
+    if (doneInterviewStatuses.has(i.status)) entry.done++;
+    roundMap.set(roundKey, entry);
+  });
   return Array.from(roundMap.entries())
     .map(([round, counts]) => ({ round, ...counts, total: counts.scheduled + counts.done }))
     .sort((a, b) => b.total - a.total);
@@ -529,14 +530,14 @@ export function getHomeMetrics(state: DashboardState, selectedMonth: string): Cl
 }
 
 export function getMonthCounts(state: DashboardState, month: string) {
-  const cvShared = state.cvSharedEntries
-    .filter((e) => e.month === month)
-    .reduce((sum, e) => sum + e.count, 0);
+  const cvShared = state.candidates.filter(
+    (c) => monthKey(c.submittedAt) === month
+  ).length;
   const interviewsDone = state.interviews.filter(
     (i) => doneInterviewStatuses.has(i.status) && monthKey(i.interviewDate) === month
   ).length;
   const finalSelects = state.candidates.filter(
-    (c) => c.stage === "Final Selection" && monthKey(c.submittedAt) === month
+    (c) => c.stage === "Final Selection" && monthKey(c.finalSelectDate || c.submittedAt) === month
   ).length;
   const joined = state.joinings.filter(
     (j) => j.status === "Joined" && monthKey(j.joiningDate) === month
@@ -574,7 +575,7 @@ function filterByMonthOrAll<T extends { submittedAt?: string; interviewDate?: st
 export function getDashboardFunnel(state: DashboardState, selectedMonth: string | "all"): DashboardFunnel {
   const isAll = selectedMonth === "all";
   const cvShared = isAll
-    ? state.cvSharedEntries.reduce((sum, e) => sum + e.count, 0)
+    ? state.candidates.length
     : getMonthCounts(state, selectedMonth).cvShared;
   const interviewsDone = isAll
     ? state.interviews.filter((i) => doneInterviewStatuses.has(i.status)).length
@@ -586,10 +587,10 @@ export function getDashboardFunnel(state: DashboardState, selectedMonth: string 
     ? state.joinings.filter((j) => j.status === "Joined").length
     : getMonthCounts(state, selectedMonth).joined;
 
-  const cvEntries = isAll
-    ? state.cvSharedEntries
-    : state.cvSharedEntries.filter((e) => e.month === selectedMonth);
-  const cvClientCount = new Set(cvEntries.map((e) => e.clientId)).size;
+  const cvCandidates = isAll
+    ? state.candidates
+    : state.candidates.filter((c) => monthKey(c.submittedAt) === selectedMonth);
+  const cvClientCount = new Set(cvCandidates.map((c) => c.clientId)).size;
 
   const interviewRows = isAll
     ? state.interviews.filter((i) => doneInterviewStatuses.has(i.status))
@@ -682,11 +683,9 @@ export function getWeekSummary(state: DashboardState): WeekSummary {
     (j) => j.status === "Joined" && isThisWeek(j.joiningDate)
   ).length;
   const currentMonth = monthKey(new Date());
-  const cvShared = state.cvSharedEntries
-    .filter((e) => e.month === currentMonth)
-    .reduce((sum, e) => sum + e.count, 0);
+  const monthlyCvs = state.candidates.filter((c) => monthKey(c.submittedAt) === currentMonth).length;
   return {
-    cvShared: Math.round(cvShared / 4.33),
+    cvShared: Math.round(monthlyCvs / 4.33),
     interviewsDone,
     finalSelects,
     joined,
@@ -724,7 +723,8 @@ export function getLastWeekSummary(state: DashboardState): WeekSummary {
   const joined = state.joinings.filter(
     (j) => j.status === "Joined" && isPreviousWeek(j.joiningDate)
   ).length;
-  return { cvShared: 0, interviewsDone, finalSelects, joined };
+  const prevCvs = state.candidates.filter((c) => isPreviousWeek(c.submittedAt)).length;
+  return { cvShared: prevCvs, interviewsDone, finalSelects, joined };
 }
 
 export interface RecruiterPerformanceRow {

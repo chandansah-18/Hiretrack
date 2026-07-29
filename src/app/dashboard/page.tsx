@@ -251,7 +251,7 @@ function FunnelSection({ state, selectedMonth, isAll }: { state: DashboardState;
 function AttentionSection({ state, selectedMonth, isAll }: { state: DashboardState; selectedMonth: string | "all"; isAll: boolean }) {
   const agingItems = useMemo(() => getAgingPipeline(state), [state]);
   const upcoming = useMemo(() => getUpcomingInterviews(state), [state]);
-  const roundBreakdown = useMemo(() => getInterviewRoundBreakdown(state), [state]);
+  const roundBreakdown = useMemo(() => getInterviewRoundBreakdown(state, isAll ? "all" : selectedMonth), [state, selectedMonth, isAll]);
 
   const pipelineStages = useMemo(() => {
     const candidates = isAll ? state.candidates : state.candidates.filter((c) => monthKey(c.submittedAt) === selectedMonth);
