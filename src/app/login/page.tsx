@@ -63,28 +63,55 @@ export default function LoginPage() {
         <div className={`${styles.blob} ${styles.blob3}`} />
       </div>
 
-      <div className={styles.grid} aria-hidden="true" />
+      <div className={styles.stars} aria-hidden="true" />
+      <div className={styles.shootingStar} aria-hidden="true" />
 
       <main className={styles.main}>
         <div className={styles.brandPanel}>
           <div className={styles.brandInner}>
-            <div className={styles.logo}>
-              <LayoutDashboard className="h-7 w-7 text-white" />
+            <div className={styles.brandTop}>
+              <div className={styles.logoIcon}>
+                <LayoutDashboard className="h-5 w-5 text-white/80" />
+              </div>
+              <span className={styles.badge}>Recruitment OS</span>
             </div>
-            <div>
-              <h1 className={styles.brandTitle}>HireTrack</h1>
-              <p className={styles.eyebrow}>Huntsmen &amp; Barons</p>
-              <p className={styles.eyebrow2}>Recruitment Operations</p>
+
+            <h1 className={styles.brandTitle}>
+              <span className={styles.brandTitleGradient}>
+                HireTrack
+              </span>
+              <span className={styles.brandTitleGlow} aria-hidden="true">
+                HireTrack
+              </span>
+            </h1>
+
+            <p className={styles.tagline}>Track. Recruit. Succeed.</p>
+
+            <div className={styles.features}>
+              <div className={styles.feature}>
+                <span className={styles.featureDot} />
+                Real-time pipeline tracking
+              </div>
+              <div className={styles.feature}>
+                <span className={styles.featureDot} />
+                Client &amp; position management
+              </div>
+              <div className={styles.feature}>
+                <span className={styles.featureDot} />
+                Smart analytics &amp; insights
+              </div>
             </div>
+
             <hr className={styles.accentLine} />
-            <p className={styles.madeWith}>Made with <span className={styles.heart}>&#10084;</span></p>
+            <p className={styles.madeWith}>Made with <span className={styles.heart}>&#10084;</span> by Huntsmen &amp; Barons</p>
           </div>
         </div>
 
         <div className={styles.formPanel}>
           <div className={`${styles.card}${shake ? ` ${styles.shake}` : ""}`}>
             <div className={styles.cardHeader}>
-              <h2 className={styles.cardTitle}>Sign in</h2>
+              <h2 className={styles.cardTitle}>Welcome back</h2>
+              <p className={styles.cardSubtitle}>Sign in to your account</p>
             </div>
 
             <form onSubmit={handleSubmit} className={styles.form} noValidate>
