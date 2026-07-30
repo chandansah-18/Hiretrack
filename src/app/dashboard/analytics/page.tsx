@@ -35,6 +35,11 @@ function PerformanceTab(props: { state: DashboardState; activeFilters: Dashboard
   const weeklyLb = useMemo(() => getWeeklyLeaderboard(state), [state]);
   const monthlyLb = useMemo(() => getMonthlyLeaderboard(state, selectedMonth), [state, selectedMonth]);
   const days = useMemo(() => getWorstProductiveDay(state, selectedMonth), [state, selectedMonth]);
+  const cvAvg = useMemo(() => {
+    const totalCvs = monthlyLb.reduce((s, r) => s + r.cvCount, 0);
+    const recruiterCount = monthlyLb.length;
+    return recruiterCount > 1 ? Math.round(totalCvs / (recruiterCount - 1)) : 0;
+  }, [monthlyLb]);
   const userRole = state.currentUserRole;
   const showProfiles = userRole === "admin" || userRole === "manager";
   const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
@@ -45,6 +50,11 @@ function PerformanceTab(props: { state: DashboardState; activeFilters: Dashboard
   const lbData = lbPeriod === "weekly" ? weeklyLb : monthlyLb;
   const maxCv = lbData.length > 0 ? Math.max(...lbData.map((r) => r.cvCount)) : 0;
   const csrTotal = csrData.reduce((s, r) => s + r.cvCount, 0);
+  const periodAvg = useMemo(() => {
+    const total = lbData.reduce((s, r) => s + r.cvCount, 0);
+    const count = lbData.length;
+    return count > 1 ? Math.round(total / (count - 1)) : 0;
+  }, [lbData]);
 
 
   const RecruiterName = ({ name }: { name: string }) => (
@@ -74,6 +84,11 @@ function PerformanceTab(props: { state: DashboardState; activeFilters: Dashboard
             <div className="flex items-center gap-2">
               <Trophy className="h-4 w-4 text-amber-500" />
               <span className="text-sm font-bold text-slate-900">CV Leaderboard</span>
+              {periodAvg > 0 && (
+                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                  Avg: {periodAvg}/recruiter
+                </span>
+              )}
             </div>
             <div className="flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
               <button

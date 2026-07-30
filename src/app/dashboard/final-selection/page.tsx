@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Gift, Trash2, AlertTriangle } from "lucide-react";
+import { ChevronDown, Gift, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/dashboard/status-pill";
 import { ModalShell } from "@/components/ui/modal-shell";
@@ -400,11 +400,13 @@ export default function FinalSelectionPage() {
   const [confirmOfferTarget, setConfirmOfferTarget] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [now] = useState(Date.now);
+  const [openActionsFor, setOpenActionsFor] = useState<string | null>(null);
+  const [quickActionTarget, setQuickActionTarget] = useState<{ candidateId: string; status: FinalSelectStatus } | null>(null);
   const { updateFinalSelect } = useApp();
 
   const isAll = selectedMonth === "all";
 
-  const handleQuickStatusChange = (candidateId: string, status: FinalSelectStatus) => {
+  const applyStatusChange = (candidateId: string, status: FinalSelectStatus) => {
     if (status === "Offer Released") {
       setConfirmOfferTarget(candidateId);
       return;
@@ -423,6 +425,12 @@ export default function FinalSelectionPage() {
       holdingOfferCompany: candidate.holdingOfferCompany,
       holdingOfferDoj: candidate.holdingOfferDoj,
     });
+  };
+
+  const handleQuickConfirm = () => {
+    if (!quickActionTarget) return;
+    applyStatusChange(quickActionTarget.candidateId, quickActionTarget.status);
+    setQuickActionTarget(null);
   };
 
   const monthOptions = useMemo(() => getDataMonths(state).map((m) => ({ label: formatMonthLabel(m), value: m })), [state]);
@@ -486,7 +494,7 @@ export default function FinalSelectionPage() {
           { label: "Notice / LWD" },
           { label: "Status" },
           ...(state.currentUserRole === "admin" || state.currentUserRole === "manager"
-            ? [{ label: "Actions", className: "w-32" as const }]
+            ? [{ label: "Actions", className: "w-20 text-center" as const }]
             : []),
         ]}
         accent="emerald"
@@ -511,31 +519,30 @@ export default function FinalSelectionPage() {
               <td className="border-b border-slate-100 px-4 py-3.5 text-slate-700">{candidate.noticePeriod || "\u2014"}</td>
               <td className="border-b border-slate-100 px-4 py-3.5"><StatusPill status={candidate.finalSelectStatus} /></td>
               {canEdit && (
-              <td className="border-b border-slate-100 px-4 py-3.5">
-                <div className="flex items-center gap-1.5">
-                  <select
-                    className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                    value=""
-                    onChange={(e) => {
-                      const val = e.target.value as FinalSelectStatus;
-                      if (!val) return;
-                      e.target.value = "";
-                      handleQuickStatusChange(candidate.id, val);
-                    }}
+              <td className="border-b border-slate-100 px-4 py-3.5 text-center" onClick={(e) => e.stopPropagation()}>
+                <div className="relative inline-block">
+                  <button
+                    className="rounded-lg p-1.5 text-slate-400 hover:bg-emerald-100 hover:text-emerald-700 transition-colors"
+                    onClick={(e) => { e.stopPropagation(); setOpenActionsFor(openActionsFor === candidate.id ? null : candidate.id); }}
                   >
-                    <option value="">Quick action...</option>
-                    {STATUS_OPTIONS.filter((s) => s !== candidate.finalSelectStatus).map((s) => (
-                      <option key={s} value={s}>{s === "Offer Released" ? "★ Release Offer" : s}</option>
-                    ))}
-                  </select>
-                  {state.currentUserRole === "admin" && (
-                    <button
-                      className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                      onClick={() => setDeleteTarget(candidate.id)}
-                      title="Delete candidate"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                  {openActionsFor === candidate.id && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setOpenActionsFor(null)} />
+                      <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                        <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Mark as</div>
+                        {STATUS_OPTIONS.filter((s) => s !== candidate.finalSelectStatus).map((s) => (
+                          <button
+                            key={s}
+                            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                            onClick={(e) => { e.stopPropagation(); setOpenActionsFor(null); setQuickActionTarget({ candidateId: candidate.id, status: s }); }}
+                          >
+                            {s === "Offer Released" ? <><Gift className="h-3.5 w-3.5 text-emerald-500" /> ★ Release Offer</> : s}
+                          </button>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
               </td>
@@ -560,6 +567,32 @@ export default function FinalSelectionPage() {
           candidate={lookups.candidates.get(confirmOfferTarget)!}
           onClose={() => setConfirmOfferTarget(null)}
         />
+      )}
+      {quickActionTarget && (
+        <ModalShell
+          open={true}
+          onClose={() => setQuickActionTarget(null)}
+          title="Confirm Status Change"
+          accent="emerald"
+          size="sm"
+          footer={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setQuickActionTarget(null)}>Cancel</Button>
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={handleQuickConfirm}>Confirm</Button>
+            </>
+          }
+        >
+          <div className="flex flex-col items-center gap-3 text-center py-2">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+              <AlertTriangle className="h-6 w-6 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">
+                Mark <strong className="text-slate-900">{lookups.candidates.get(quickActionTarget.candidateId)?.name ?? "this candidate"}</strong> as <strong className="text-slate-900">{quickActionTarget.status}</strong>?
+              </p>
+            </div>
+          </div>
+        </ModalShell>
       )}
       <ConfirmDeleteModal
         open={!!deleteTarget}

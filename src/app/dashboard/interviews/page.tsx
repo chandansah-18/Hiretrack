@@ -487,7 +487,7 @@ export default function InterviewsPage() {
   const { state, addInterview, updateInterviewAll, updateInterviewStatus, deleteInterview, currentRecruiterId, can } = useApp();
   const lookups = useMemo(() => createLookups(state), [state]);
   const [tab, setTab] = useState<"my" | "all">("my");
-  const [subTab, setSubTab] = useState<"today" | "upcoming" | "completed">("today");
+  const [subTab, setSubTab] = useState<"today" | "upcoming" | "overdue" | "completed">("today");
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addPrefill, setAddPrefill] = useState<Partial<Omit<Interview, "id">> | undefined>(undefined);
   const [detailTarget, setDetailTarget] = useState<Interview | null>(null);
@@ -519,6 +519,7 @@ export default function InterviewsPage() {
     const d = today();
     if (subTab === "today") list = list.filter((i) => i.interviewDate === d);
     else if (subTab === "upcoming") list = list.filter((i) => i.interviewDate > d && !COMPLETED_STATUSES.has(i.status));
+    else if (subTab === "overdue") list = list.filter((i) => i.interviewDate < d && !COMPLETED_STATUSES.has(i.status));
     else if (subTab === "completed") list = list.filter((i) => COMPLETED_STATUSES.has(i.status));
 
     if (clientFilter) list = list.filter((i) => i.clientId === clientFilter);
@@ -635,6 +636,7 @@ export default function InterviewsPage() {
             {([
               { label: "Today", value: "today" as const },
               { label: "Upcoming", value: "upcoming" as const },
+              { label: "Overdue", value: "overdue" as const },
               { label: "Completed", value: "completed" as const },
             ]).map((t) => (
               <button

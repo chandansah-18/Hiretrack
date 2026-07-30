@@ -906,6 +906,7 @@ export function applyDashboardAction(state: DashboardState, action: DashboardAct
 
       const activities: ActivityLog[] = [];
       let updatedOffers = state.offers;
+      let updatedJoinings = state.joinings;
 
       if (isOfferReleased && candidate) {
         if (existingOffer) {
@@ -959,6 +960,42 @@ export function applyDashboardAction(state: DashboardState, action: DashboardAct
             description: `Offer created for candidate ${action.candidateId}.`,
           });
         }
+
+        if (action.joiningDate) {
+          const existing = state.joinings.find((j) => j.candidateId === action.candidateId);
+          if (existing) {
+            updatedJoinings = state.joinings.map((j) =>
+              j.id === existing.id
+                ? { ...j, joiningDate: action.joiningDate! }
+                : j
+            );
+          } else {
+            updatedJoinings = [
+              ...state.joinings,
+              {
+                id: createPrefixedId("join"),
+                candidateId: action.candidateId,
+                positionId: candidate.positionId,
+                clientId: candidate.clientId,
+                recruiterId: candidate.recruiterId,
+                status: "Not Joined" as const,
+                joiningDate: action.joiningDate,
+                remarks: action.remarks || candidate.remarks || "",
+              },
+            ];
+          }
+          activities.push({
+            id: createPrefixedId("log"),
+            timestamp: new Date().toISOString(),
+            actorRole: state.currentUserRole,
+            actorName: action.actorName,
+            action: "Created joining",
+            entityType: "joining",
+            entityId: action.candidateId,
+            entityName: action.candidateId,
+            description: `Joining created for candidate ${action.candidateId}.`,
+          });
+        }
       }
 
       if (isPreOfferLose && existingOffer) {
@@ -981,6 +1018,7 @@ export function applyDashboardAction(state: DashboardState, action: DashboardAct
         ...state,
         candidates: updatedCandidates,
         offers: updatedOffers,
+        joinings: updatedJoinings,
         activityLog: [...state.activityLog, ...activities],
       };
     }
@@ -1173,7 +1211,7 @@ export function getAffectedTables(action: DashboardAction): Set<DashboardTableNa
     case "delete-candidate":
       return new Set(["candidates", "interviews", "offers", "joinings", "activity_log"]);
     case "update-final-select":
-      return new Set(["candidates", "offers", "activity_log"]);
+      return new Set(["candidates", "offers", "joinings", "activity_log"]);
     case "update-selection":
       return new Set(["offers", "joinings", "candidates", "activity_log"]);
     case "mark-leave":

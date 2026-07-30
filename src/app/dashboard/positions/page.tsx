@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Pencil, Plus, Trash2, X, Download } from "lucide-react";
+import { Check, Pencil, Plus, Search, Trash2, X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/dashboard/status-pill";
 import { StepFormModal } from "@/components/ui/step-form-modal";
@@ -496,6 +496,7 @@ export default function PositionsPage() {
   const [clientFilter, setClientFilter] = useState("");
   const [pocFilter, setPocFilter] = useState("");
   const [monthFilter, setMonthFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const lookups = useMemo(() => createLookups(state), [state]);
 
@@ -514,8 +515,19 @@ export default function PositionsPage() {
     if (monthFilter) {
       rows = rows.filter((p) => p.openDate.startsWith(monthFilter));
     }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      rows = rows.filter((p) => {
+        const client = lookups.clients.get(p.clientId);
+        const spoc = lookups.spocs.get(p.spocId);
+        const recruiter = lookups.recruiters.get(p.recruiterId);
+        return [p.name, client?.name, spoc?.name, recruiter?.name, p.status, p.openDate].some(
+          (v) => `${v ?? ""}`.toLowerCase().includes(q)
+        );
+      });
+    }
     return rows;
-  }, [state, activeTab, clientFilter, pocFilter, monthFilter]);
+  }, [state, activeTab, clientFilter, pocFilter, monthFilter, searchQuery, lookups]);
 
   const downloadable = useMemo(() => {
     if (!filtered.length) return [];
@@ -552,6 +564,15 @@ export default function PositionsPage() {
       onTabChange={(v) => setActiveTab(v)}
       filters={
         <>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              className="w-44 rounded-lg border border-slate-200 py-1.5 pl-8 pr-3 text-xs outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white placeholder:text-slate-400"
+              placeholder="Search positions..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
           <FilterSelect accent="blue" value={clientFilter} onChange={(e) => setClientFilter(e.target.value)}>
             <option value="">All Clients</option>
             {state.clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
