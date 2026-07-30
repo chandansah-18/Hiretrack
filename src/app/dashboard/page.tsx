@@ -138,7 +138,7 @@ function FunnelSection({ state, selectedMonth, isAll }: { state: DashboardState;
   }
 
   const weekItems = [
-    { label: "CVs Shared", value: weekSummary.cvShared, color: "#3b82f6" },
+    { label: "CVs Shared", value: weekSummary.cvShared, color: "#3b82f6", prev: lastWeek.cvShared },
     { label: "Interviews Done", value: weekSummary.interviewsDone, color: "#10b981", prev: lastWeek.interviewsDone },
     { label: "Final Select", value: weekSummary.finalSelects, color: "#f59e0b", prev: lastWeek.finalSelects },
     { label: "Joined", value: weekSummary.joined, color: "#8b5cf6", prev: lastWeek.joined },
@@ -191,53 +191,35 @@ function FunnelSection({ state, selectedMonth, isAll }: { state: DashboardState;
           <div className="flex items-center gap-2 mb-5">
             <Activity className="h-4 w-4 text-violet-500" />
             <h3 className="text-sm font-semibold text-slate-800">This Week</h3>
-            {weekItems.some((i) => i.value > 0) && (
-              <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-600">
-                {weekItems.reduce((s, i) => s + i.value, 0)} total
-              </span>
-            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             {weekItems.map((item) => {
-              const hasPrev = "prev" in item && item.prev !== undefined;
-              const wd = hasPrev ? weekDelta(item.value, item.prev!) : null;
-              const isPos = wd !== null && wd > 0;
-              const isNeg = wd !== null && wd < 0;
-              const barPct = hasPrev && item.prev !== undefined ? Math.min((item.value / Math.max(item.prev, 1)) * 100, 200) : 0;
-              const fillPct = Math.min(barPct, 100);
+              const wd = weekDelta(item.value, item.prev);
+              const isPos = wd > 0;
+              const isNeg = wd < 0;
               return (
-                <div key={item.label} className="rounded-xl border border-slate-100 bg-white p-3 shadow-sm transition hover:shadow-md hover:-translate-y-0.5">
-                  <div className="flex items-center justify-between mb-2">
+                <div key={item.label} className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                       <span className="text-xs font-semibold text-slate-500">{item.label}</span>
                     </div>
-                    <span className="text-lg font-bold tracking-tight text-slate-900">{item.value}</span>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-2xl font-bold tracking-tight text-slate-900">{item.value}</span>
+                      <span className="text-xs font-medium text-slate-400">/ {item.prev}</span>
+                    </div>
                   </div>
-                  {hasPrev && (
-                    <div className="relative mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{ width: `${fillPct}%`, backgroundColor: item.color }}
-                      />
+                  {wd !== 0 && (
+                    <div className={`mt-1.5 flex items-center gap-1 text-xs font-semibold ${isPos ? "text-emerald-600" : "text-red-500"}`}>
+                      {isPos ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                      {isPos ? "+" : ""}{wd}% vs last week
                     </div>
                   )}
-                  <div className="mt-1.5 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">
-                      {hasPrev ? `${item.prev ?? 0} last week` : ""}
-                    </span>
-                    {wd !== null && wd !== 0 && (
-                      <span className={`flex items-center gap-0.5 font-semibold ${isPos ? "text-emerald-600" : "text-red-500"}`}>
-                        {isPos ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                        {isPos ? "+" : ""}{wd}%
-                      </span>
-                    )}
-                    {wd !== null && wd === 0 && (
-                      <span className="flex items-center gap-0.5 font-semibold text-slate-400">
-                        <Minus className="h-3 w-3" /> 0%
-                      </span>
-                    )}
-                  </div>
+                  {wd === 0 && (
+                    <div className="mt-1.5 flex items-center gap-1 text-xs font-semibold text-slate-400">
+                      <Minus className="h-3 w-3" /> No change
+                    </div>
+                  )}
                 </div>
               );
             })}

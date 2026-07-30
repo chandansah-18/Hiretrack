@@ -461,7 +461,7 @@ function RevenueTab({ state, selectedMonth, onMonthChange }: { state: DashboardS
                         <td className="px-3 py-2 font-medium text-slate-900">{row.candidateName}</td>
                         <td className="px-3 py-2 text-slate-600">{row.clientName}</td>
                         <td className="px-3 py-2 text-slate-600">{row.positionName}</td>
-                        <td className="px-3 py-2 text-right font-semibold text-slate-800">{Math.round(row.offeredCtc / 100000)} LPA</td>
+                        <td className="px-3 py-2 text-right font-semibold text-slate-800">{row.offeredCtc} LPA</td>
                         <td className="px-3 py-2 text-right font-semibold text-slate-900">₹{formatCurrency(row.billValue)}</td>
                         <td className="px-3 py-2 text-slate-600">{row.joiningDate ? formatShortDate(row.joiningDate) : "—"}</td>
                         <td className={`px-3 py-2 text-right font-semibold ${days > 0 ? "text-emerald-600" : days < 0 ? "text-red-500" : "text-slate-500"}`}>

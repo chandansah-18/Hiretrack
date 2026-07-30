@@ -673,23 +673,17 @@ export interface WeekSummary {
 }
 
 export function getWeekSummary(state: DashboardState): WeekSummary {
+  const cvShared = state.candidates.filter((c) => isThisWeek(c.submittedAt)).length;
   const interviewsDone = state.interviews.filter(
     (i) => doneInterviewStatuses.has(i.status) && isThisWeek(i.interviewDate)
   ).length;
   const finalSelects = state.candidates.filter(
-    (c) => c.stage === "Final Selection" && isThisWeek(c.submittedAt)
+    (c) => c.stage === "Final Selection" && isThisWeek(c.finalSelectDate || c.submittedAt)
   ).length;
   const joined = state.joinings.filter(
     (j) => j.status === "Joined" && isThisWeek(j.joiningDate)
   ).length;
-  const currentMonth = monthKey(new Date());
-  const monthlyCvs = state.candidates.filter((c) => monthKey(c.submittedAt) === currentMonth).length;
-  return {
-    cvShared: Math.round(monthlyCvs / 4.33),
-    interviewsDone,
-    finalSelects,
-    joined,
-  };
+  return { cvShared, interviewsDone, finalSelects, joined };
 }
 
 function getPreviousWeekRange() {
@@ -718,7 +712,7 @@ export function getLastWeekSummary(state: DashboardState): WeekSummary {
     (i) => doneInterviewStatuses.has(i.status) && isPreviousWeek(i.interviewDate)
   ).length;
   const finalSelects = state.candidates.filter(
-    (c) => c.stage === "Final Selection" && isPreviousWeek(c.submittedAt)
+    (c) => c.stage === "Final Selection" && isPreviousWeek(c.finalSelectDate || c.submittedAt)
   ).length;
   const joined = state.joinings.filter(
     (j) => j.status === "Joined" && isPreviousWeek(j.joiningDate)
