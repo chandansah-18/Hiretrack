@@ -645,25 +645,36 @@ async function loadTableRows(
       return { positions: (data ?? []).map((row) => toPosition(row as PositionRow)) };
     }
     case "candidates": {
-      const { data, error } = await client
-        .from("candidates")
-        .select("*")
-        .is("archived_at", null)
-        .gte("submitted_at", cutoff)
-        .order("submitted_at", { ascending: false })
-        .limit(CANDIDATE_HOT_LIMIT);
-      if (error && String(error.message).includes("archived_at")) {
-        const retry = await client
+      const results: CandidateRow[] = [];
+      const pageSize = 1000;
+      let from = 0, to = pageSize - 1;
+      for (let page = 0; page < 10; page++) {
+        const { data, error } = await client
           .from("candidates")
           .select("*")
+          .is("archived_at", null)
           .gte("submitted_at", cutoff)
           .order("submitted_at", { ascending: false })
-          .limit(CANDIDATE_HOT_LIMIT);
-        if (retry.error) throw retry.error;
-        return { candidates: (retry.data ?? []).map((row) => toCandidate(row as CandidateRow)) };
+          .range(from, to);
+        if (error && String(error.message).includes("archived_at")) {
+          const retry = await client
+            .from("candidates")
+            .select("*")
+            .gte("submitted_at", cutoff)
+            .order("submitted_at", { ascending: false })
+            .range(from, to);
+          if (retry.error) throw retry.error;
+          results.push(...(retry.data ?? []));
+        } else if (error) {
+          throw error;
+        } else {
+          results.push(...(data ?? []));
+        }
+        if (!data || data.length < pageSize) break;
+        from = to + 1;
+        to = from + pageSize - 1;
       }
-      if (error) throw error;
-      return { candidates: (data ?? []).map((row) => toCandidate(row as CandidateRow)) };
+      return { candidates: results.map((row) => toCandidate(row as CandidateRow)) };
     }
     case "interviews": {
       const { data, error } = await client
