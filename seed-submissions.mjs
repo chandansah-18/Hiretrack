@@ -90,7 +90,7 @@ async function ensurePosition(posName, clientId, spocId, recruiterId) {
     spoc_id: spocId || 'spoc-c862cf4d-084f-4cd7-94f8-777f065f1a2e',
     technology: 'General',
     vertical: 'General',
-    status: 'Active',
+    status: 'Open',
     open_date: new Date().toISOString().slice(0, 10),
     openings: 1,
     ctc: 0,
