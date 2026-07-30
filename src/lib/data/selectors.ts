@@ -426,21 +426,8 @@ export function groupRecruiterPerformance(state: DashboardState, filters: Dashbo
   });
 }
 
-function getWeekRange() {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diff);
-  monday.setHours(0, 0, 0, 0);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
-  return { monday, sunday };
-}
-
 function isThisWeek(dateStr: string) {
-  const { monday, sunday } = getWeekRange();
+  const { monday, sunday } = getWeekRange(0);
   const date = new Date(dateStr);
   return date >= monday && date <= sunday;
 }
@@ -672,53 +659,37 @@ export interface WeekSummary {
   joined: number;
 }
 
-export function getWeekSummary(state: DashboardState): WeekSummary {
-  const cvShared = state.candidates.filter((c) => isThisWeek(c.submittedAt)).length;
-  const interviewsDone = state.interviews.filter(
-    (i) => doneInterviewStatuses.has(i.status) && isThisWeek(i.interviewDate)
-  ).length;
-  const finalSelects = state.candidates.filter(
-    (c) => c.stage === "Final Selection" && isThisWeek(c.finalSelectDate || c.submittedAt)
-  ).length;
-  const joined = state.joinings.filter(
-    (j) => j.status === "Joined" && isThisWeek(j.joiningDate)
-  ).length;
-  return { cvShared, interviewsDone, finalSelects, joined };
-}
-
-function getPreviousWeekRange() {
+function getWeekRange(weekOffset: number) {
   const now = new Date();
   const day = now.getDay();
   const diff = day === 0 ? -6 : 1 - day;
-  const thisMonday = new Date(now);
-  thisMonday.setDate(now.getDate() + diff);
-  thisMonday.setHours(0, 0, 0, 0);
-  const prevMonday = new Date(thisMonday);
-  prevMonday.setDate(thisMonday.getDate() - 7);
-  const prevSunday = new Date(prevMonday);
-  prevSunday.setDate(prevMonday.getDate() + 6);
-  prevSunday.setHours(23, 59, 59, 999);
-  return { monday: prevMonday, sunday: prevSunday };
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diff + weekOffset * 7);
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  return { monday, sunday };
 }
 
-function isPreviousWeek(dateStr: string) {
-  const { monday, sunday } = getPreviousWeekRange();
+function isInWeek(dateStr: string, weekOffset: number) {
+  const { monday, sunday } = getWeekRange(weekOffset);
   const date = new Date(dateStr);
   return date >= monday && date <= sunday;
 }
 
-export function getLastWeekSummary(state: DashboardState): WeekSummary {
+export function getWeekSummary(state: DashboardState, weekOffset = 0): WeekSummary {
+  const cvShared = state.candidates.filter((c) => isInWeek(c.submittedAt, weekOffset)).length;
   const interviewsDone = state.interviews.filter(
-    (i) => doneInterviewStatuses.has(i.status) && isPreviousWeek(i.interviewDate)
+    (i) => doneInterviewStatuses.has(i.status) && isInWeek(i.interviewDate, weekOffset)
   ).length;
   const finalSelects = state.candidates.filter(
-    (c) => c.stage === "Final Selection" && isPreviousWeek(c.finalSelectDate || c.submittedAt)
+    (c) => c.stage === "Final Selection" && isInWeek(c.finalSelectDate || c.submittedAt, weekOffset)
   ).length;
   const joined = state.joinings.filter(
-    (j) => j.status === "Joined" && isPreviousWeek(j.joiningDate)
+    (j) => j.status === "Joined" && isInWeek(j.joiningDate, weekOffset)
   ).length;
-  const prevCvs = state.candidates.filter((c) => isPreviousWeek(c.submittedAt)).length;
-  return { cvShared: prevCvs, interviewsDone, finalSelects, joined };
+  return { cvShared, interviewsDone, finalSelects, joined };
 }
 
 export interface RecruiterPerformanceRow {
