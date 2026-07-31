@@ -645,34 +645,37 @@ async function loadTableRows(
       return { positions: (data ?? []).map((row) => toPosition(row as PositionRow)) };
     }
     case "candidates": {
-      const results: CandidateRow[] = [];
       const pageSize = 1000;
-      let from = 0, to = pageSize - 1;
-      for (let page = 0; page < 10; page++) {
-        const { data, error } = await client
-          .from("candidates")
-          .select("*")
-          .is("archived_at", null)
-          .gte("submitted_at", cutoff)
-          .order("submitted_at", { ascending: false })
-          .range(from, to);
-        if (error && String(error.message).includes("archived_at")) {
-          const retry = await client
+      const pagePromises = [0, 1, 2].map((page) =>
+        (async () => {
+          const from = page * pageSize;
+          const to = from + pageSize - 1;
+          const { data, error } = await client
             .from("candidates")
             .select("*")
+            .is("archived_at", null)
             .gte("submitted_at", cutoff)
             .order("submitted_at", { ascending: false })
             .range(from, to);
-          if (retry.error) throw retry.error;
-          results.push(...(retry.data ?? []));
-        } else if (error) {
-          throw error;
-        } else {
-          results.push(...(data ?? []));
-        }
-        if (!data || data.length < pageSize) break;
-        from = to + 1;
-        to = from + pageSize - 1;
+          if (error && String(error.message).includes("archived_at")) {
+            const retry = await client
+              .from("candidates")
+              .select("*")
+              .gte("submitted_at", cutoff)
+              .order("submitted_at", { ascending: false })
+              .range(from, to);
+            if (retry.error) throw retry.error;
+            return retry.data ?? [];
+          }
+          if (error) throw error;
+          return data ?? [];
+        })()
+      );
+      const pages = await Promise.all(pagePromises);
+      const results: CandidateRow[] = [];
+      for (const pageData of pages) {
+        results.push(...pageData);
+        if (pageData.length < pageSize) break;
       }
       return { candidates: results.map((row) => toCandidate(row as CandidateRow)) };
     }

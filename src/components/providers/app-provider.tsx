@@ -37,6 +37,7 @@ import { createSeedState } from "@/lib/data/seed";
 import { createLookups } from "@/lib/data/selectors";
 import { hasPermission } from "@/lib/data/permissions";
 import { createDashboardPersistence } from "@/lib/data/persistence";
+import { readCachedDashboardState, writeCachedDashboardState } from "@/lib/data/supabase-cache";
 import { subscribeToDashboardStateChanges, subscribeToSupabaseDashboardChanges } from "@/lib/data/sync";
 import type { DashboardTableName } from "@/lib/data/mutations";
 import { createPrefixedId } from "@/lib/data/id";
@@ -159,6 +160,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const nextState = await persistence.load(session?.userId);
       setState(nextState);
       setLoadError(null);
+      if (persistence.isSupabase && session?.userId) {
+        writeCachedDashboardState(session.userId, nextState);
+      }
     } catch (error) {
       const message = describeError(error);
       console.error("Failed to load dashboard state", message);
@@ -208,11 +212,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setIsLoading(true);
+      const cached = persistence.isSupabase ? readCachedDashboardState() : null;
+      const hydratedFromCache = cached !== null && cached.userId === session?.userId;
+
+      if (hydratedFromCache && cached) {
+        if (!cancelled) {
+          setState(cached.state);
+          setLoadError(null);
+          setIsLoading(false);
+        }
+      } else {
+        setIsLoading(true);
+      }
+
       try {
         const nextState = await persistence.load(session?.userId);
         if (!cancelled) {
           setState(nextState);
+          if (persistence.isSupabase && session?.userId) {
+            writeCachedDashboardState(session.userId, nextState);
+          }
           setLoadError(null);
         }
       } catch (error) {
@@ -350,6 +369,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             return;
           }
           await persistence.save(next, dirtyTables, prev, dirtyIds);
+          if (persistence.isSupabase && session?.userId) {
+            writeCachedDashboardState(session.userId, next);
+          }
           if (epoch !== saveEpochRef.current) {
             return;
           }
