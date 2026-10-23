@@ -221,27 +221,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const supabase = getBrowserSupabaseClient();
       if (supabase) {
+        let data: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>["data"];
         try {
-          const { data, error } = await supabase.auth.signInWithPassword({
+          const result = await supabase.auth.signInWithPassword({
             email: normalizedEmail,
             password,
           });
-          if (error) throw error;
+          if (result.error) {
+            recordFailedAttempt(normalizedEmail);
+            return { success: false, error: "Incorrect email or password." };
+          }
+          data = result.data;
           if (!data.user) throw new Error("No user returned");
+        } catch (e) {
+          console.error("Supabase sign-in failed before credentials could be verified", e);
+          recordFailedAttempt(normalizedEmail);
+          return { success: false, error: "Incorrect email or password." };
+        }
 
+        try {
           const { data: profile, error: profileError } = await supabase
             .from("profiles")
             .select("display_name, role, active")
             .eq("id", data.user.id)
             .maybeSingle();
 
-          if (profileError) {
-            throw new Error(profileError.message);
-          }
-
+          if (profileError) throw profileError;
           if (profile?.active === false) {
             await supabase.auth.signOut();
-            recordFailedAttempt(normalizedEmail);
             return { success: false, error: "Your account has been deactivated. Contact admin." };
           }
 
@@ -264,8 +271,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(s);
           return { success: true };
         } catch (e) {
-          recordFailedAttempt(normalizedEmail);
-          return { success: false, error: "Incorrect email or password." };
+          console.error("Supabase accepted credentials but profile lookup failed", e);
+          await supabase.auth.signOut();
+          return { success: false, error: "Your password was accepted, but your account profile could not be loaded. Contact your administrator." };
         }
       } else if (process.env.NEXT_PUBLIC_DEV_AUTH === "true") {
         try {

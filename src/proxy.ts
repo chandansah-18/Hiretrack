@@ -55,9 +55,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  // Clear expired or revoked auth cookies so a stale refresh token cannot
+  // keep breaking every visit to the login page.
+  if (authError) {
+    console.warn("Supabase session is invalid; clearing stale auth cookies", authError.message);
+    await supabase.auth.signOut();
+  }
 
   let isActive = true;
   if (user) {
