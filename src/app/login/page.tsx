@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, LayoutDashboard, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-context";
+import { getBrowserSupabaseClient } from "@/lib/supabase/browser";
 import styles from "./login.module.css";
 
 export default function LoginPage() {
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [shake, setShake] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
 
@@ -51,6 +53,33 @@ export default function LoginPage() {
       }
     } catch {
       setError("An unexpected error occurred. Check the console for details.");
+      setSubmitting(false);
+    }
+  }
+
+  async function handlePasswordReset() {
+    setError("");
+    setResetSent(false);
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail.toLowerCase().endsWith("@huntsmenbarons.com")) {
+      setError("Enter your @huntsmenbarons.com email first.");
+      return;
+    }
+    const supabase = getBrowserSupabaseClient();
+    if (!supabase) {
+      setError("Password recovery is unavailable. Contact your administrator.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: `${window.location.origin}/update-password`,
+      });
+      if (resetError) throw resetError;
+      setResetSent(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not send the reset email. Try again.");
+    } finally {
       setSubmitting(false);
     }
   }
@@ -152,8 +181,12 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                <button type="button" onClick={handlePasswordReset} disabled={submitting} style={{ alignSelf: "flex-end", border: 0, background: "none", padding: "0.2rem 0", color: "#2563eb", cursor: submitting ? "wait" : "pointer", fontSize: "0.78rem" }}>
+                  Forgot password?
+                </button>
               </div>
 
+              {resetSent && <div className={styles.errorBox} role="status" style={{ background: "#f0fdf4", borderColor: "#bbf7d0", color: "#166534" }}>If an account exists for that email, a password reset link has been sent.</div>}
               {error && (
                 <div className={styles.errorBox} role="alert">
                   {error}
